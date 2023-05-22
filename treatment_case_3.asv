@@ -1,0 +1,349 @@
+% Haryana Thomas 05/22/2023
+% treatment_case_3: case 3: Predicting AGE inhibition short term
+%%%%%%%%%%%% Input and Outputs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Inputs: Glucose concentration profile, initial values for species, exp data of macrophages and TGF-B
+        % Output: AGE, MCP, Macrophage, TGF-B, MC+, MMP, TIMP, Collagen concentration profiles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+clc
+clear
+
+%% Parameter definition and experimental data import
+% Import experimental data of macrophages for fitting and scale macrophage
+% number to macrophage density (g/ml)
+species_M = 6;                          % This is for macrophage population data
+speciesT_B = 4;                         % This is for TGF-B fold change data
+species_ma = 5;                         % This is for activated mesangial cell fold change data
+species_rho = 2;                        % This is for collagen fold change data
+cleaned_dataset_struct = load('cleaned_dataset.mat','cleaned_dataset');
+cleaned_dataset = cleaned_dataset_struct.cleaned_dataset;
+cleaned_dataset {species_M}(:,2:3) = cleaned_dataset{species_M}(:,2:3)*(0.6667/12);    % (0.67/12) is the scaling factor to convert number of cells into cell density of units g/ml
+cleaned_dataset {species_M}(:,6) = cleaned_dataset{species_M}(:,6)*(0.6667/12);
+% Dataset for AGE vs MCP-1 dose response curve in mesangial cells
+scaling_factor = 150/5000;                                % This scale factor is to scale AGE data from human to mice
+AGE_data = [0,25,100,200,300]'*scaling_factor*10^-6;      % Data is in g/ml
+MCP_data = [160,220,280,290,300]'*10^-12;                 % Data is in g/ml
+
+
+%% Parameter values 
+[yo,param_vals] = parameter_vals(cleaned_dataset,species_M);
+
+%% Time and glucose initialization
+% Assign length of time to run simulation for (Short term = 24, long term = 200)
+notreatment_period = 16;                    % Units are in weeks
+glucose_treatment_status = 0;                       % Treatment applied = 1, no treatment applied = 0 for glucose control
+treatment_period = 8;                       % Period for which treatment is applied (short term = 8 weeks)
+
+exp_duration = notreatment_period;           % Units are in weeks (set normal or longer period)
+weeks_2_days = 7;                           % Conversion factor for going from weeks to days
+exp_duration_days = exp_duration*weeks_2_days;
+timespan_no_treatment = (1:1:exp_duration_days)/weeks_2_days;   
+g_no_treat = gluc_conc_func_v20(exp_duration,glucose_treatment_status);
+
+% Run the without-AGE-Inhibitor model (no treatment)
+options = odeset('AbsTol',1e-16,'RelTol',1e-16);
+[t_no_treat,y_no_treat] = ode23(@(t,y)glomerular_fibrosis(t,y,param_vals,g_no_treat,timespan_no_treatment,yo),timespan_no_treatment,yo,options);
+
+
+% Run the with-AGE-Inhibitor model (Simulation period with treatment)
+treatment_duration = treatment_period;                                  % Units are in weeks (set normal or longer period)
+treatment_duration_days = treatment_duration*weeks_2_days;
+timespan_treatment = (1:1:treatment_duration_days)/weeks_2_days;   
+y_I = [y_no_treat(end,1),y_no_treat(end,2),y_no_treat(end,3),y_no_treat(end,4),y_no_treat(end,5),y_no_treat(end,6),y_no_treat(end,7),y_no_treat(end,8)];           % Take initial values from the end of the simulation without treatment
+g_conc = gluc_conc_func_v20(exp_duration+treatment_period,glucose_treatment_status); 
+g_treatment = g_conc((exp_duration_days+1):(exp_duration_days+treatment_duration_days));          % Gotta take glucose concentration values corresponding to the treatment time considered
+options = odeset('AbsTol',1e-16,'RelTol',1e-16);
+[t_treat,y_treat] = ode23(@(t,y)complete_fibrosis_AGEI(t,y,param_vals,g_treatment,timespan_treatment,y_I),timespan_treatment,y_I,options);
+
+% Grouping the no treatment and treatment scenarios
+timespan = [t_no_treat;(t_treat+t_no_treat(end-1))];
+y_out = [y_no_treat;y_treat];
+
+%% Plotting the results
+% Color code for figures
+    colors = [[0, 0.4470, 0.7410];[0.8500, 0.3250, 0.0980];[0.9290, 0.6940, 0.1250];[0.4940, 0.1840, 0.5560];[0.4660, 0.6740, 0.1880];[0.3010, 0.7450, 0.9330];[0.6350, 0.0780, 0.1840]];
+    % black: glucose, dotted black: AGE, colors(1,:):MCP, colors(2,:):Macrophage, colors(3,:):TGF-B, colors(4,:):Activated MC, colors(5,:):MMP, colors(6,:):TIMP, colors(7,:):Collagen
+
+%% Glucose input
+figure(1)
+plot(timespan,g_conc,'linewidth',3,'Color','black')
+ylabel("Glucose (g/ml)"),xlabel("Time (weeks)"),grid on, ylim([0 5.5e-3])
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_glucose = strcat(init_path,results_folder,'\Glucose');
+export_fig(full_path_glucose,'-r1000','-a4', '-q101', '-painters', '-png')
+
+%% Plotting system 1 (AGE, MCP, Macrophage, )
+figure(2)
+plot(timespan,y_out(:,1),'linewidth',3,'LineStyle','-.','Color','black'),xlabel('Time (weeks)'),ylabel('AGE (g/ml)'),grid on, %ylim([0 3e-5]) %axis([10 25 0 1]),
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_age = strcat(init_path,results_folder,'\AGE');
+export_fig(full_path_age,'-r1000','-a4', '-q101', '-painters', '-png')
+
+figure (3)
+plot(timespan,y_out(:,2),'linewidth',3,'Color',colors(1,:)),xlabel('Time (weeks)'),ylabel('MCP-1 (g/ml)'),grid on, ylim([0 3.5e-10]) %axis([10 25 0.002 0.0025]),
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_mcp = strcat(init_path,results_folder,'\MCP');
+export_fig(full_path_mcp,'-r1000','-a4', '-q101', '-painters', '-png')
+
+figure(4)
+plot(timespan,y_out(:,3),'linewidth',3,'Color',colors(2,:)),grid on
+xlabel("Time (weeks)"), ylabel("Macrophage (g/ml)"),ylim([0 0.14])
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_macrophage = strcat(init_path,results_folder,'\Macrophage');
+export_fig(full_path_macrophage,'-r1000','-a4', '-q101', '-painters', '-png')
+
+
+if exp_data_switch == 1
+    figure(5)
+    scatter(cleaned_dataset {species_M}(:,1),cleaned_dataset {species_M}(:,2),'filled','MarkerFaceColor',colors(2,:))
+    errorbar(cleaned_dataset{species_M}(:,1),cleaned_dataset{species_M}(:,2),cleaned_dataset{species_M}(:,6),'filled','MarkerEdgeColor',colors(2,:), 'Color', colors(2,:))
+    hold on
+    plot(timespan,y_out(:,3),'linewidth',3,'Color',colors(2,:)),xlabel('Time (weeks)'),ylabel('Macrophage (g/ml)'),grid on, ylim([0 0.14])%axis([10 25 0 1]),
+    get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+    full_path_macrophage_fc = strcat(init_path,results_folder,'\Macrophage_fc');
+    export_fig(full_path_macrophage_fc,'-r1000','-a4', '-q101', '-painters', '-png')
+end
+%% Plotting AGE-MCP dynamics with experimental data
+if exp_data_switch == 1
+    figure(6)
+    plot(y_out(:,1),y_out(:,2),'linewidth',3,'Color',colors(1,:))
+    hold on
+    scatter(AGE_data,MCP_data ,'filled','MarkerFaceColor',colors(1,:)),grid on%ylim([0 3e-5])
+    errorbar(AGE_data,MCP_data,MCP_error,'o','MarkerEdgeColor',colors(1,:), 'Color', colors(1,:))
+    xlabel('AGE (g/ml)'),ylabel('MCP-1 (g/ml)'),legend('Model','Exp data'),get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+    full_path_agemcp = strcat(init_path,results_folder,'\AGE-MCP');
+    export_fig(full_path_agemcp,'-r1000','-a4', '-q101', '-painters', '-png')
+end
+
+
+%% Plotting system 2 (TGF-B)
+figure (7)
+plot(timespan,y_out(:,4),'linewidth',3,'Color',colors(3,:)),grid on
+xlabel("Time (weeks)"), ylabel("TGF-B (g/ml)"), ylim([0 4e-9]),
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_tgfb = strcat(init_path,results_folder,'\TGF-B');
+export_fig(full_path_tgfb,'-r1000','-a4', '-q101', '-painters', '-png')
+
+% Plotting TGF-B fold change
+if exp_data_switch == 1
+y_fc = y_out(:,4)/y_out(1,4);
+figure (8)
+plot(timespan,y_fc,'linewidth',3,'Color',colors(3,:))
+hold on
+scatter(cleaned_dataset{4}(:,1),cleaned_dataset{4}(:,2),'filled','MarkerFaceColor',colors(3,:))
+errorbar(cleaned_dataset{4}(:,1),cleaned_dataset{4}(:,2),cleaned_dataset{4}(:,5),'o','MarkerEdgeColor',colors(3,:), 'Color', colors(3,:))
+xlabel("Time (weeks)"), ylabel(" TGF-B fold change"),grid on,legend('Model','Exp data'),grid on,legend('Location','best'),%ylim([0,3]),
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_tgfb_fc = strcat(init_path,results_folder,'\TGFB_fc');
+export_fig(full_path_tgfb_fc ,'-r1000','-a4', '-q101', '-painters', '-png')
+end
+
+%% Plotting activated mesangial cells
+if exp_data_switch == 1
+    figure (9)  
+    yout = y_out(:,5)/yo(5);
+    plot(timespan,yout,'linewidth',3,'Color',colors(4,:)),grid on
+    xlabel("Time (weeks)"), ylabel("MC+")
+    hold on
+    scatter(cleaned_dataset{species_ma}(:,1),cleaned_dataset{species_ma}(:,2),'filled','MarkerFaceColor',colors(4,:))
+    errorbar(cleaned_dataset{species_ma}(:,1),cleaned_dataset{species_ma}(:,2),cleaned_dataset{species_ma}(:,5),'o','MarkerEdgeColor',colors(4,:), 'Color', colors(4,:))
+    xlim([0,24]),ylim([0,3.5]),xlabel("Time (wks)"), ylabel("Activated MC fold change"),grid on,legend('Model','Exp data'),legend('Location','best'),%title("Activated Mesangial")
+    get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+    full_path_mafc = strcat(init_path,results_folder,'\Activated MC fc');
+    export_fig(full_path_mafc,'-r1000','-a4', '-q101', '-painters', '-png')
+end
+
+% Plotting MC+ concentration
+figure(10)
+plot(timespan,y_out(:,5),'linewidth',3,'Color',colors(4,:)),grid on
+xlabel("Time (weeks)"), ylabel("Activated MC (g/ml)"),ylim([0 5.5e-3])
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_ma = strcat(init_path,results_folder,'\Activated MC');
+export_fig(full_path_ma,'-r1000','-a4', '-q101', '-painters', '-png')
+
+% Plotting MMP
+figure (11)
+plot(timespan,y_out(:,6),'linewidth',3,'Color',colors(5,:)),grid on
+xlabel("Time (weeks)"), ylabel("MMP (g/ml)"),ylim([0 8e-10])
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_mmp = strcat(init_path,results_folder,'\MMP');
+export_fig(full_path_mmp,'-r1000','-a4', '-q101', '-painters', '-png')
+
+% Plotting TIMP
+figure (12)
+plot(timespan,y_out(:,7),'linewidth',3,'Color',colors(5,:)),grid on
+xlabel("Time (weeks)"), ylabel("TIMP (g/ml)"),ylim([0 3e-11])
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_timp = strcat(init_path,results_folder,'\TIMP');
+export_fig(full_path_timp,'-r1000','-a4', '-q101', '-painters', '-png')
+
+
+% Plotting collagen
+figure (14)
+plot(timespan,y_out(:,8),'linewidth',3,'Color',colors(6,:)),grid on
+xlabel("Time (weeks)"), ylabel("Collagen (g/ml)"),ylim([0 0.14])
+get(gca);set(gcf, 'Color', 'w');set(gca,'FontSize',14,'FontName','Arial');
+full_path_rho = strcat(init_path,results_folder,'\Collagen');
+export_fig(full_path_rho,'-r1000','-a4', '-q101', '-painters', '-png')
+
+
+%% Subsystem 1-4 With AGE Inhibitor Treatment
+function output = complete_fibrosis_AGEI(t,y,Param_vals,g_conc,timespan,yo)
+    AGE = y(1);
+    P = y(2);
+    M = y(3);
+    T_B = y(4);
+    ma = y(5);
+    Q = y(6);
+    Q_r = y(7);
+    rho = y(8);
+
+
+    % Parameter definition sys 1 (AGE, MCP and Macrophages)
+    Param_vals1 = Param_vals{1};
+    K_AGE = Param_vals1(1);
+    L_PE = Param_vals1(2);
+    d_P = Param_vals1(3);
+    Po = Param_vals1(4);
+    d_AGE = Param_vals1(5);           
+    
+    K_P = Param_vals1(6);
+    Mo = Param_vals1(7);
+
+    n = Param_vals1(8);
+    m = Param_vals1(9);
+    d_M = Param_vals1(10);
+    
+    % Define parameters for system 2 and 3 (TGF, MC and MC+)
+    Param_vals23 = Param_vals{2};
+    d_TB = Param_vals23(1);    
+    mc = Param_vals23(2);
+    d_ma = Param_vals23(3);
+    L_maT = Param_vals23(4);
+    K_TB = Param_vals23(5);
+    mao = Param_vals23(6);
+
+    L_TBM = Param_vals23(7);
+    T_Bknot = Param_vals23(8);
+    n1 = Param_vals23(9);
+
+    % Define parameters for system 4
+    Param_vals4 = Param_vals{3};
+    d_QQr = Param_vals4(1);
+    d_QrQ = Param_vals4(2);
+    d_Q = Param_vals4(3);
+    d_Qr = Param_vals4(4);
+    
+    L_Qrm = Param_vals4(5);
+    L_QM = Param_vals4(6);
+    
+    d_rho = Param_vals4(7);
+    L_rhom = Param_vals4(8);
+    d_rhoQ = Param_vals4(9);
+    L_rhoma = Param_vals4(10);
+    K_I = Param_vals4(11) ;
+        
+    % Calculated parameters
+    AGEss = 1.5e-7;                 % fix this value
+    Mss = yo(3);
+    Pss = yo(2);
+    alpha = (d_M*Mss)*(K_P^n + Pss^n)/((Pss^n)*Mo);                  % Calculated based on setting macrophage equation to zero and using Mss=0.0104 g/ml
+    go = 5.8*180/1000000;
+
+    L_AGE = (d_AGE*AGEss)/(go^m); 
+
+    % Equations fot AGE and MCP system
+    gluc = interp1(timespan,g_conc,t);
+    dAGEdt = (L_AGE*gluc^m)/(1 + K_I) - d_AGE*AGE; 
+    dPdt = Po + L_PE*AGE*mc/(K_AGE + AGE) - d_P*P; 
+
+    % Macrophage equation 
+    dMdt = alpha*(P^n/(K_P^n + P^n))*Mo - d_M*M;
+
+    % Equation for TGF-B (sys 2 and 3)
+    dT_Bdt = T_Bknot + L_TBM*M - d_TB*T_B; 
+        
+    dmadt = mao + L_maT*(T_B^n1/(K_TB^n1 + T_B^n1))*mc - d_ma*ma; %  
+
+    % Differential equation for sys 4
+    dQdt =  L_QM*M - d_QQr*Q*Q_r - d_Q*Q; %
+    dQ_rdt = L_Qrm*M - d_QrQ*Q*Q_r - d_Qr*Q_r; % 
+    drhodt = L_rhom*mc + L_rhoma*ma - d_rhoQ*Q*rho - d_rho*rho; %
+
+    output = [dAGEdt;dPdt;dMdt;dT_Bdt;dmadt;dQdt;dQ_rdt;drhodt];
+end 
+
+
+%% Function definition for parameter values
+
+function [yo,parameters] = parameter_vals(cleaned_dataset,species_M)
+
+% Parameter definitions
+K_AGE = 1.1437*10^-6;                  % Estimated from estimate_mmconst_age_v6               
+L_PE = 408.69*10^-12;                 % Estimated from estimate_mmconst_age_v6        
+d_P = 1.73;  
+Po = (160*10^-12)*d_P;               % Steady state assumption on MCP equation
+d_AGE = 0.008;                      % Calculated based on collagen turnover in kidneys
+
+K_P = 5*10^-9;  
+Mo = 5*10^-5;
+n = 4.05;                       % THe power to which P and Kp are raised in the macrophage equation %4.05
+m = 5.95;                           % The power to which gluc is raised in AGE equation   %5.95                         
+d_M = 52;
+param_vals1 = [K_AGE,L_PE,d_P,Po,d_AGE,K_P,Mo,n,m,d_M];
+
+% Define parameters for sys 2 and sys 3 (T_B, MC and MC+)
+d_TB = 333;
+mc = 0.67;
+d_ma = 0.5;
+L_maT = 4*10^-3;
+K_TB = 2.5*10^-9;
+mao = 5.644*10^-4;
+
+L_TBM = 0.75e-5;
+T_Bknot = 3.222e-7;
+n1 = 3.5;
+
+param_vals23 = [d_TB, mc, d_ma, L_maT,K_TB,mao,L_TBM,T_Bknot,n1];
+
+% Define parameters for system 4
+d_QQr = 4.98*10^8; 
+d_QrQ = 1.04*10^9; 
+d_Q = 4.32; 
+d_Qr = 21.6;
+
+L_QM = 3*10^-8; 
+L_Qrm = L_QM/5;
+
+
+d_rho = 0.37;
+L_rhom = 3*10^-3;             
+d_rhoQ = 0.5*10^4;            % Decreased d_rhoQ until we reached a min value where little to no increase occcurred in collagen 
+L_rhoma = 10;                % Increased L_rhoma until we reached a max value where little to no increase occurred in collagen
+K_I = 1e+5;
+param_vals4 = [d_QQr,d_QrQ,d_Q,d_Qr,L_Qrm,L_QM,d_rho,L_rhom,d_rhoQ,L_rhoma,K_I];
+
+parameters = {param_vals1;param_vals23;param_vals4};
+
+% Initial values
+AGEss = 1.50*10^-7;                 % Baseline CML serum concn' values obtained from literature
+Pss = Po/d_P + L_PE*AGEss*mc/((K_AGE + AGEss)*d_P);
+Mss = cleaned_dataset {species_M}(1,2);   % Macrophage initial value is now based on the experimental data we collected
+
+T_Bss = (T_Bknot + L_TBM*Mss)/d_TB; 
+mass = (mao + L_maT*mc*T_Bss^n1/(K_TB^n1 + T_Bss^n1))/d_ma;
+
+
+syms Qss Q_rss rhoss positive
+eqn7 = Qss == L_QM*Mss/(d_QQr*Q_rss + d_Q); 
+eqn8 = Q_rss == L_Qrm*Mss/(d_QrQ*Qss + d_Qr); 
+eqn9 = rhoss == (L_rhom*mc + L_rhoma*mass)/(d_rhoQ*Qss + d_rho); 
+Qeqns = [eqn7,eqn8,eqn9];
+Q_sol = vpasolve(Qeqns,[Qss,Q_rss,rhoss]);
+Q_sol_values = double([Q_sol.Qss(1),Q_sol.Q_rss(1),Q_sol.rhoss(1)]);
+Qss = Q_sol_values(1);
+Q_rss = Q_sol_values(2);
+rhoss = Q_sol_values(3);
+
+yo = [AGEss,Pss,Mss,T_Bss,mass,Qss,Q_rss,rhoss];
+end
