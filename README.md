@@ -1,8 +1,8 @@
 # GlomerularFibrosis
-Code for Logic-Based Modeling of Inflammatory Macrophage Crosstalk with Glomerular Endothelial Cells in Diabetic Kidney Disease
+Code for modeling glomerular fibrosis in diabetic kidney disease to predict therapeutic efficacy of different treatment approaches. 
 
 ## Overview
-This logic-based ODE model predicts the effects of glucose and inflammatory stimulus on pro-inflammatory macrophages and glomerular endothelial cells in diabetic kidney disease. A protein signaling network describes the crosstalk between macrophages and glomerular endothelial cells stimulated by glucose and LPS, and it consists of 30 species and 40 interactions. The model inputs (glucose or LPS) are 0 or 1 when the input is inactive or fully active. The model species hold a value between 0 and 1. A set of 30 differential equations define the activation or inhibition of a species using normalized Hill functions. The model was used to explore the possible mechanisms for dysregulated signaling in both macrophages and glomerular endothelial cells during diabetic kidney disease progression. The model simulations were trained and validated against in vitro experimental data.
+The model consists of a system of ordinary differential equations (ODEs) that describe the change in population of cells and biomolecules involved in the process of glomerular fibrosis during diabetic kidney disease. The model is subjected to different therapeutic scenarios to predict efficacy of different treatment approaches on reducing glomerular fibrosis. The basecase model represents the progression of glomerular fibrosis in the absence of treatment. Treatment scenarios 1-5 represent different treatment approaches and their efficacy on reducing glomerular fibrosis.
 
 ## Authors
 Haryana Y. Thomas<sup>a</sup>,  Ashlee N. Ford Versypt<sup>a,b,c</sup>
@@ -16,7 +16,7 @@ H. Y. Thomas and A. N. Ford Versypt, A Mathematical Model of Glomerular Fibrosis
 
 ## Analysis code
 
-treatment_basecase: Base case scenario with no treatment applied
+basecase: Base case scenario with no treatment applied
 
 treatment_case_1: To predict therapeutic efficacy of glucose control - short term
 
