@@ -1,6 +1,9 @@
 # GlomerularFibrosis
 Code for modeling glomerular fibrosis in diabetic kidney disease to predict therapeutic efficacy of different treatment approaches. 
 
+[![DOI](https://zenodo.org/badge/642514223.svg)](https://zenodo.org/badge/latestdoi/642514223)
+
+
 ## Overview
 The model consists of a system of ordinary differential equations (ODEs) that describe the change in population of cells and biomolecules involved in the process of glomerular fibrosis during diabetic kidney disease. The model is subjected to different therapeutic scenarios to predict efficacy of different treatment approaches on reducing glomerular fibrosis. The basecase model represents the progression of glomerular fibrosis in the absence of treatment. Treatment scenarios 1-5 represent different treatment approaches and their efficacy on reducing glomerular fibrosis.
 
