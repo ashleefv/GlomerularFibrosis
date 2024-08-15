@@ -17,34 +17,55 @@ Haryana Y. Thomas<sup>a</sup>,  Ashlee N. Ford Versypt<sup>a,b,c</sup>
 ## Manuscript
 H. Y. Thomas and A. N. Ford Versypt, A Mathematical Model of Glomerular Fibrosis in Diabetic Kidney Disease to Predict Therapeutic Efficacy, bioRxiv preprint, 2023. DOI: 10.1101/2023.04.02.535270 [Preprint](https://biorxiv.org/cgi/content/short/2023.04.02.535270)
 
-## Analysis code
+## Main code
 
-basecase: Base case scenario with no treatment applied
+MainParamEstimGlomerularFibrosis.m
 
-treatment_case_1: To predict therapeutic efficacy of glucose control - short term
+This is the main file that runs the parameter estimation and the different scenarios (Basecase scenario, glucose control, AGE inhibition, Enhanced AGE degradation)
+with the estimated parameters. This main file requires the following supporting files
 
-treatment_case_2: To predict therapeutic efficacy of glucose control - long term
+## Supporting codes
 
-treatment_case_3: To predict therapeutic efficacy of AGE Inhibition - short term
+- ParamEstimation.m: The function that solves the parameter estimation problem given the error function, the fmincon solver, the bounds and the multistart option.
 
-treatment_case_4: To predict therapeutic efficacy of AGE Inhibition - long term
+- Errorfunction.m: The function that calculates the error function value using the nonlinear least squares objective function, experimental data input and model output.
 
-treatment_case_5: To predict therapeutic efficacy of Enhanced AGE degradation - short term
+- runGlomerularFibrosis.m: The function that runs the glomerular fibrosis model for the healthy case to obtain initial values and runs the glomerular fibrosis model for the diseased case of high glucose. 
 
+- GlomerularFibrosis.m: The function that contains the set of ODEs describing the rate of evolution of the model species. 
 
-## Supplementary codes
+- Average_the_exp_data.m: The function that takes the raw data containing multiple datasets per time point and averages the datasets to obtain one data point per time point.
 
-glomerular_fibrosis.m: Model equations without treatment
+- parameter_vals.m: The function containing the list of initial parameter values (before parameter estimation) composed of initial guesses, and literature obtained estimates 
 
-glomerular_fibrosis_AGE_deg.m: Model equations with AGE degradation enhancement included
+- ParameterSorter.m: The function that sorts the parameters into parameters that need to be estimated and parameters that are fixed to be fed into the parameter estimation problem.
 
-glomerular_fibrosis_AGEI.m: Model equations with AGE inhibition included
+- GlucoseInputFunc.m: The function that determines the glucose input into the model (Either baseline levels of glucose or a ramp input to high glucose levels).
 
-glucose_input.m: Function for glucose input
+- CombineFitAndFixedParams.m: The function that combines estimated and fixed parameters to feed back into the ODE glomerular fibrosis model.
 
-parameter_vals.m: Function containing parameter values
+- UpdateParameterValues.m: The Function that updates parameter values with the newly estimated parameters after every parameter estimation. 
+
+- ParameterNames.m: The function called within ParameterSorter.m to identify the parameters that are to be estimated.
+
+- GlucoseDataStructuring.m: Restructure raw glucose data into cells containing lists of glucose data from separate studies for visualizing glucose ramp input relative to experimental data.
+
+- PlotResults.m: Function to visualize the model ouput results by itself and also in comparison with experimental data
+
+- SensitivityAnalysis.m: Code for local sensitivity analysis to identify influence of parameter values on collagen accumulation.
+
+- AGeMCpEstimation.m: Code for estimating K_AGE and L_MCP parameters from in vitro data.
+
+- SMaTGfEstimation.m: Code for estimating K_TGF and L_AMC parameters from in vitro data of a-sma vs TGF-B.
+
+- Pnames4Legend.m: Function of parameter names for specifying legend in sensitivity analysis plots.
 
 
 ## Supplementary data 
 
-cleaned_dataset.mat: contains the data that was used for estimating parameters
+- FibrosisData_v2.csv: An excel sheet containing longitudinal data of model species fold changes as a function of time. 
+
+- GlucoseData.xslx: An excel sheet containing longitudinal data of glucose concentration in db/db mice. Used for generating the glucose ramp input.
+
+- AGEMCPData.m: A matlab function containing the in vitro dose response data of mesangial cells incubated in different concentrations of AGE. Used in AGeMCpEstimation.m.
+
