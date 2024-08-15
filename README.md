@@ -5,7 +5,7 @@ Code for modeling glomerular fibrosis in diabetic kidney disease to predict ther
 
 
 ## Overview
-The model consists of a system of ordinary differential equations (ODEs) that describe the change in population of cells and biomolecules involved in the process of glomerular fibrosis during diabetic kidney disease. The model is subjected to different therapeutic scenarios to predict efficacy of different treatment approaches on reducing glomerular fibrosis. The basecase model represents the progression of glomerular fibrosis in the absence of treatment. Treatment scenarios 1-5 represent different treatment approaches and their efficacy on reducing glomerular fibrosis.
+The model consists of a system of ordinary differential equations (ODEs) that describe the change in population of cells and biomolecules involved in the process of glomerular fibrosis during diabetic kidney disease. The model is subjected to different therapeutic scenarios to predict efficacy of different treatment approaches on reducing glomerular fibrosis. One of the key steps in creating the model was parameter estimation using in vitro and in vivo data of glomerular fibrosis in diabetes. The main file runs the parameter estimation and also the different treatment scenarios tested on the model. Within the main file, the basecase scenario represents the progression of glomerular fibrosis in the absence of treatment. The treatment scenarios consisted of glucose control, AGE inhibition, and Enhanced AGE degradation. They represent different treatment approaches and their efficacy on reducing glomerular fibrosis.
 
 ## Authors
 Haryana Y. Thomas<sup>a</sup>,  Ashlee N. Ford Versypt<sup>a,b,c</sup>
