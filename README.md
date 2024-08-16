@@ -15,7 +15,7 @@ Haryana Y. Thomas<sup>a</sup>,  Ashlee N. Ford Versypt<sup>a,b,c</sup>
 <sup>c</sup>Institute for Artificial Intelligence and Data Science, University at Buffalo, The State University of New York, Buffalo, NY, USA<br/>
 
 ## Manuscript
-H. Y. Thomas and A. N. Ford Versypt, A Mathematical Model of Glomerular Fibrosis in Diabetic Kidney Disease to Predict Therapeutic Efficacy, bioRxiv preprint, 2023. DOI: 10.1101/2023.04.02.535270 [Preprint](https://biorxiv.org/cgi/content/short/2023.04.02.535270)
+H. Y. Thomas and A. N. Ford Versypt, A Mathematical Model of Glomerular Fibrosis in Diabetic Kidney Disease to Predict Therapeutic Efficacy, bioRxiv preprint, 2024. DOI: 10.1101/2023.04.02.535270 [Preprint](https://biorxiv.org/cgi/content/short/2023.04.02.535270)
 
 ## Main code
 
