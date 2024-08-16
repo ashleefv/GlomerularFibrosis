@@ -1,7 +1,7 @@
 # GlomerularFibrosis
 Code for modeling glomerular fibrosis in diabetic kidney disease to predict therapeutic efficacy of different treatment approaches. 
 
-[![DOI](https://zenodo.org/badge/642514223.svg)](https://zenodo.org/badge/latestdoi/642514223)
+[![DOI](https://zenodo.org/badge/642514223.svg)](https://zenodo.org/doi/10.5281/zenodo.7971796)
 
 
 ## Overview
