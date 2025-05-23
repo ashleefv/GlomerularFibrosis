@@ -95,7 +95,7 @@
     Data = ModelFitResults.FitColData;  
     ParametersEst = CombineFitAndFixedParams(Data.Pbest,Data.p_fixed,Data.P2fitIdx,Data.PfixedIdx);
     ParameterNames = ParameterNames();
-    ParameterTable = array2table(ParametersFinal,'VariableNames',ParameterNames);
+    ParameterTable = array2table(ParametersEst,'VariableNames',ParameterNames);
     InitialValueTable = array2table(Data.y_dbm(end,:),"VariableNames",["AGE","MCP","Macrophage","TGF-B","AMC","MMP","TIMP","Collagen"]);
 
 %% Scenario simulations
